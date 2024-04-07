@@ -13,20 +13,53 @@ K is laplacian, x is voltages, f is currents
 
 def main(edges, f1):
     edge_list, matrix_dim = clean_edges(edges)
-    laplacian = edges_to_matrix(edge_list, matrix_dim)  # converts to numpy
-    print("laplacian:\n", laplacian)
-    inverse_reduced_laplacian = inverse_laplacian(laplacian)
-    x = solve_equation(inverse_reduced_laplacian, np.float64(f1), matrix_dim)
-    print("Voltages:\n", x.T)
+    print("edge_list:", edge_list)
+    graph = list_to_dictionary(edge_list)
+    if has_path(graph, 1, 2):
+        laplacian = edges_to_matrix(edge_list, matrix_dim)  # converts to numpy
+        print("laplacian:\n", laplacian)
+        inverse_reduced_laplacian = inverse_laplacian(laplacian)
+        x = solve_equation(inverse_reduced_laplacian, np.float64(f1), matrix_dim)
+        print("Voltages:\n", x.T)
+        return x
+    return [-1]
+
+def list_to_dictionary(edges):
+    graph = {}
+    for edge in edges:
+        print(edges, edge)
+        if edge[0] not in graph:
+            graph[edge[0]] = [edge[1]]
+        else:
+            graph[edge[0]].append(edge[1])
+        if edge[1] not in graph:
+            graph[edge[1]] = [edge[0]]
+        else:
+            graph[edge[1]].append(edge[0])
+    return graph
+    
+
+def has_path(graph, start, end, visited=None):
+    # depth first algorithm checks if there exists a path between nodes start and end
+    if visited is None:
+        visited = set()
+    visited.add(start)
+    if start == end:
+        return True
+    for neighbor in graph.get(start, []):
+        if neighbor not in visited:
+            if has_path(graph, neighbor, end, visited):
+                return True
+    return False
 
 def clean_edges(edges):
     # Makes sure there are no duplicates and makes the edges all ordered in a list 
     edge_set = set()
     for edge in edges:
         if edge["source"] > edge["target"]:
-            edge_set.add((edge["target"], edge["source"]))
+            edge_set.add((edge["target"], edge["source"], edge["conductance"]))
         else:
-            edge_set.add((edge["source"], edge["target"]))
+            edge_set.add((edge["source"], edge["target"], edge["conductance"]))
     edge_list = sorted(edge_set)
     edge_list = [list(elem) for elem in edge_list]  # so that it is mutable for later
 
@@ -58,19 +91,19 @@ def clean_edges(edges):
         if not missing_digits:
             reduced = True
 
-    return edge_list, max_value_node
+    return edge_list, max_value_node, 
 
 
 def edges_to_matrix(edge_list, matrix_dim):
     # fill in non-diagonals
     laplacian = np.zeros((matrix_dim, matrix_dim))
     for edge in edge_list:
-        laplacian[edge[0]-1][edge[1]-1] = -1
-        laplacian[edge[1]-1][edge[0]-1] = -1
+        laplacian[edge[0]-1][edge[1]-1] = -edge[2]
+        laplacian[edge[1]-1][edge[0]-1] = -edge[2]
     # fill in diagonals
     for i, row in enumerate(laplacian):
-        count = np.count_nonzero(row)
-        laplacian[i][i] = count
+        row_sum = np.sum(row)
+        laplacian[i][i] = -row_sum
     return laplacian
 
 
@@ -98,8 +131,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/process_edges/", methods=["POST"])
-def process_edges():
+@app.route("/process_data/", methods=["POST"])
+def process_data():
     # Receive the POST request and parse JSON data
     data = request.get_json()
 
@@ -107,14 +140,16 @@ def process_edges():
     edges = data.get("edges")
     f1 = data.get("current1")
 
-    main(edges, f1)
-    # Process the edges dictionary (perform your desired operations here)
+    # calculate the voltages given the edge layout and the source current
+    if edges:
+        voltages = main(edges, f1)
+    else:
+        voltages = []
 
-    # Return a response if needed
-    return jsonify({"message": "Edges received successfully"})
+    return jsonify(list(voltages))
 
 
-@app.route("/process_edges", methods=["OPTIONS"])  # Handle CORS preflight requests
+@app.route("/process_data", methods=["OPTIONS"])  # Handle CORS preflight requests
 def handle_options():
     response = app.make_default_options_response()
     response.headers["Access-Control-Allow-Origin"] = "http://localhost:5173/"

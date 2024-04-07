@@ -1,5 +1,4 @@
 <script>
-	import { onMount } from "svelte";
 	import CircuitNode from "./CircuitNode.svelte";
 	
 	let nodes = []; // Initialize nodes array
@@ -8,14 +7,21 @@
 	let nodesCreated = false; // Track whether nodes 1 and 2 have been created
 	let selectedNodeId = 0;
 	let addingEdge = false;
+	let enabledConductance = false;
 	
 	// Function to initialize nodes with provided currents
 	function initializeNodes() {
-		nodes = [
-			{ id: 1, voltage: "x", current: current1, x: 250, y: 250 },
-			{ id: 2, voltage: 0, current: -current1, x: 250, y: 400 }
+		current1 = Number(current1)
+		let valid = !isNaN(current1) && Number.isFinite(current1)
+		if (valid) {
+			nodes = [
+			{ id: 1, voltage: "x", current: current1, x: 250, y: 300 },
+			{ id: 2, voltage: 0, current: -current1, x: 250, y: 450 }
 		];
 		nodesCreated = true; // Set nodesCreated to true once nodes 1 and 2 are created
+		} else {
+			alert("That doesn't seem to be a finite number!")
+		}
 	}
 	
 	// Function to add a new node with voltage set at "x" and current set to 0
@@ -33,6 +39,15 @@
 		addingEdge = !addingEdge;
 	}
 
+	function clearCircuit() {
+		nodes = [];
+		edges = [];
+		nodesCreated = false;
+		addingEdge = false;
+		current1 = "";
+		selectedNodeId = 0;
+	}
+
 	// Function to handle node click
 	function handleNodeClick(event, nodeId) {
 		const { x, y } = event.detail
@@ -43,7 +58,18 @@
 			selectedNodeId = nodeId;
 			} else {
 			// Second node selected, draw edge
-			edges = [...edges, { source: selectedNodeId, target: nodeId }];
+			let conductance_value = 1
+			if (enabledConductance === true) {
+				let valid = false;
+				while (!valid) {
+					conductance_value = Number(prompt("Enter the value of conductance:"));
+					valid = !isNaN(conductance_value) && Number.isFinite(conductance_value);
+					if (!valid) {
+						alert("That was not a number!")
+					}
+				}
+			}
+			edges = [...edges, { source: selectedNodeId, target: nodeId, conductance: conductance_value }];
 			console.log("Connected Nodes:", selectedNodeId, nodeId);
 			selectedNodeId = 0; // Reset selected node
 			addingEdge = false;
@@ -51,10 +77,21 @@
 		}
 	}
 
-	function POST_edges() {
-		const backendUrl = "http://127.0.0.1:5000/process_edges/";
+	function update_voltages(voltages) {
+		for (let index=0; index < nodes.length; index++) {
+			if (index < voltages.length) {
+				nodes[index]["voltage"] = voltages[index].toFixed(2)
+			} else {
+				nodes[index]["voltage"] = 0
+			}				
+		}
+	}
 
-		fetch(backendUrl, {
+	function POST_data() {
+		const backendUrl = "http://127.0.0.1:5000";
+
+
+		fetch(backendUrl + "/process_data/", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -63,18 +100,28 @@
 		})
 		.then(response => {
 			if (response.ok) {
-				console.log("Edges sent to backend successfully");
+				console.log("data sent to backend successfully");
+				return response.json();
 			} else {
-				console.error("Failed to send edges to backend");
+				console.error("Failed to send data to backend");
 			}
 		})
+		.then(returned_data => {
+			console.log(returned_data);
+			if (returned_data && returned_data.length > 0) {
+				update_voltages(returned_data)
+			} else {
+				alert("Nodes 1 and 2 must be connected for this program to work. This is because they are the source and sink nodes so them not being connected means the current can't flow which we are assuming it does!")
+			}
+			
+		})
 		.catch(error => {
-			console.error("Error sending edges to backend:", error);
+			console.error("Error sending data to backend:", error);
 		});
 	}
 
 	function solveCircuit() {
-		POST_edges()
+		POST_data()
 	}
 
 </script>
@@ -102,10 +149,15 @@
 	</div>
 
 	<!-- Button to add a new node (conditionally rendered) -->
-	{#if nodesCreated}
-		<button class="add-node-button" on:click={addNode}>Add Node</button>
-		<button class="draw-edge-button" on:click={addEdge}>Draw Edge</button>
-		<button class="solve-graph" on:click={solveCircuit}>Solve Circuit to find Voltages</button>
+	{#if nodesCreated}    
+			<button class="add-node-button" on:click={addNode}>Add Node</button>
+			<div class="checkbox-container">
+				<input type="checkbox" bind:checked={enabledConductance} id="enableConductance">
+				<label for="enableConductance">Enable Conductance Input (default: 1)</label>    	
+			</div>
+			<button class="draw-edge-button" on:click={addEdge}>Draw Edge</button>
+			<button class="solve-graph" on:click={solveCircuit}>Solve Circuit to find Voltages</button>
+			<button class="clear-graph" on:click={clearCircuit}>Clear the circuit</button>
 	{/if}
 
 	<svg class="svg-container">
@@ -123,6 +175,16 @@
 								stroke-width="2"
 								class="edge"
 							/>
+							<text
+								x={(node.x + node2.x + 100) / 2}
+								y={(node.y + node2.y + 100) / 2}
+								font-size="12"
+								text-anchor="middle"
+								alignment-baseline="middle"
+								style="fill: red; font-weight: bold; font-size: 14px;"
+                        	>
+                            {edge.conductance}
+                        	</text>
 						{/if}
 					{/each}
 				{/if}
@@ -134,6 +196,14 @@
 
 
 <style>
+	.checkbox-container {
+		position: absolute;
+        display: flex;
+        align-items: center;
+		top: calc(10rem + 20px);
+		left: 30vw;
+    }
+
 	.add-node-button {
 		position: absolute;
 		top: calc(8rem + 20px);
@@ -149,6 +219,12 @@
 	.solve-graph {
 		position: absolute;
 		top: calc(12rem + 20px);
+		left: 17.75vw;
+	}
+
+	.clear-graph {
+		position: absolute;
+		top: calc(14rem + 20px);
 		left: 17.75vw;
 	}
 
