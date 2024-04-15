@@ -12,17 +12,19 @@ K is laplacian, x is voltages, f is currents
 
 
 def main(edges, f1):
-    edge_list, matrix_dim = clean_edges(edges)
-    print("edge_list:", edge_list)
-    graph = list_to_dictionary(edge_list)
-    if has_path(graph, 1, 2):
+    edge_list1 = order_edges(edges)
+    print("edge_list 1:", edge_list1)
+    if has_path(edge_list1.copy(), 1, 2):
+        edge_list, matrix_dim = account_for_unconnected(edge_list1)
+        print("edge_list 2:", edge_list)
+        graph = list_to_dictionary(edge_list)
         laplacian = edges_to_matrix(edge_list, matrix_dim)  # converts to numpy
         print("laplacian:\n", laplacian)
         inverse_reduced_laplacian = inverse_laplacian(laplacian)
         x = solve_equation(inverse_reduced_laplacian, np.float64(f1), matrix_dim)
         print("Voltages:\n", x.T)
         return x
-    return [-1]
+    return []
 
 def list_to_dictionary(edges):
     graph = {}
@@ -39,20 +41,36 @@ def list_to_dictionary(edges):
     return graph
     
 
-def has_path(graph, start, end, visited=None):
-    # depth first algorithm checks if there exists a path between nodes start and end
-    if visited is None:
-        visited = set()
-    visited.add(start)
-    if start == end:
-        return True
-    for neighbor in graph.get(start, []):
-        if neighbor not in visited:
-            if has_path(graph, neighbor, end, visited):
-                return True
-    return False
+def has_path(edge_list, start, end):
+    # checks if there is a path between two nodes
+    not_visited = {start}
+    visited = set()
+    found = False
+    print("CHECKING FOR PATH")
+    while not_visited and not found:
+        curr = not_visited.pop()
+        visited.add(curr)  
+        for connection in edge_list:
+            print(edge_list, curr, connection)
+            # I know the code isn't very pretty but it does the job and I don't think it affects time complexity
+            # so its ok!
+            if connection[0] == curr:
+                if connection[1] == end:
+                    found = True
+                    break
+                if connection[1] not in visited:
+                    not_visited.add(connection[1])
+            elif connection[1] == curr:
+                if connection[0] == end:
+                    found = True
+                    break
+                if connection[0] not in visited:
+                    not_visited.add(connection[0])
+    print(found)   
+    return found
 
-def clean_edges(edges):
+
+def order_edges(edges):
     # Makes sure there are no duplicates and makes the edges all ordered in a list 
     edge_set = set()
     for edge in edges:
@@ -62,7 +80,10 @@ def clean_edges(edges):
             edge_set.add((edge["source"], edge["target"], edge["conductance"]))
     edge_list = sorted(edge_set)
     edge_list = [list(elem) for elem in edge_list]  # so that it is mutable for later
+    return edge_list
 
+
+def account_for_unconnected(edge_list):
     # Adjusts digits to account for nodes not being connected and hence reducing unnecessary computation
     nodes = set()
     for edge in edge_list:
@@ -90,8 +111,7 @@ def clean_edges(edges):
         missing_digits = set(range(1, max_value_node + 1)) - nodes
         if not missing_digits:
             reduced = True
-
-    return edge_list, max_value_node, 
+    return edge_list, max_value_node
 
 
 def edges_to_matrix(edge_list, matrix_dim):

@@ -113,7 +113,6 @@
 			} else {
 				alert("Nodes 1 and 2 must be connected for this program to work. This is because they are the source and sink nodes so them not being connected means the current can't flow which we are assuming it does!")
 			}
-			
 		})
 		.catch(error => {
 			console.error("Error sending data to backend:", error);
