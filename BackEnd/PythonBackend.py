@@ -46,12 +46,10 @@ def has_path(edge_list, start, end):
     not_visited = {start}
     visited = set()
     found = False
-    print("CHECKING FOR PATH")
     while not_visited and not found:
         curr = not_visited.pop()
         visited.add(curr)  
         for connection in edge_list:
-            print(edge_list, curr, connection)
             # I know the code isn't very pretty but it does the job and I don't think it affects time complexity
             # so its ok!
             if connection[0] == curr:
@@ -66,7 +64,6 @@ def has_path(edge_list, start, end):
                     break
                 if connection[0] not in visited:
                     not_visited.add(connection[0])
-    print(found)   
     return found
 
 
