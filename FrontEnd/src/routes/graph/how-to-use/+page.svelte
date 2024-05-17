@@ -38,8 +38,7 @@
     <p>
         Once your circuit is built you can solve the circuit by using the solve circuit button which will fill in the voltage values
 		of each component that are by default "x". Note that this is only possible if there exists a path between nodes 1 and 2
-		although the program will work out whether there is a path using a breadth first search algorithm so it will prompt you if
-		there is a problem!
+		although the program should work out whether there is a path so it will prompt you if there is a problem!
     </p>
 	<hr class="section-divider">
 	<h3>
