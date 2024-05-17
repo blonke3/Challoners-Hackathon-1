@@ -52,7 +52,7 @@
 		The other nodes are called boundary nodes as they have a non-zero current loss. 
 	<p>
 		We use conductance instead of resistance as it makes the maths neater. It is very simply 1/resistance though. The units are
-		(as expected) 1/ohms.
+		Ω^−1 (ohms^-1) or S (Siemens).
 	</p>
 </div>
 
