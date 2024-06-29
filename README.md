@@ -1,4 +1,4 @@
-![image](https://github.com/blonke3/Challoners-Hackathon-1/assets/93889351/26fec184-0ea5-4d7b-9e15-695de2269e79)﻿# Challoners-Hackathon-1
+﻿# Challoners-Hackathon-1
 This is an electric circuit solver project.
 
 In the front end a display is created of the circuit that the user can generate. This is done using sveltekit.
