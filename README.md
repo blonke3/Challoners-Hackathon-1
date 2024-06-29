@@ -1,4 +1,4 @@
-﻿# Challoners-Hackathon-1
+![image](https://github.com/blonke3/Challoners-Hackathon-1/assets/93889351/26fec184-0ea5-4d7b-9e15-695de2269e79)﻿# Challoners-Hackathon-1
 This is an electric circuit solver project.
 
 In the front end a display is created of the circuit that the user can generate. This is done using sveltekit.
@@ -13,3 +13,8 @@ Note that if the localhost URL isn't http://localhost:5173/ then you will need t
 pass through. 
 
 Unfortunately, this project can only run locally although maybe future versions will be runnable on a proper website.
+
+<img src="https://github.com/blonke3/Challoners-Hackathon-1/assets/93889351/fcfd48fc-f723-489b-b460-bb34997dfa20" width="400">
+
+
+<img src="https://github.com/blonke3/Challoners-Hackathon-1/assets/93889351/edb5ec09-cac2-4d3a-a7f5-4a327baead94" width="400">
